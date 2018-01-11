@@ -9,6 +9,6 @@ This repository contains 4 directories. They are as follows
 * lightSwitchv4 - this is the Arduino code for Version 4 of the smartswitch, pictured below:
 ![lightSwitchv4](http://new.alexshakespeare.com/wp-content/uploads/2018/01/v4.jpg)
 index.html is the uncompressed version of the page this switch serves from PROGMEM - compress it using an online tool of your choice if you want to customise.
-* PebbleCode - this is a Cloudpebble .zip backup of the Pebble client for these switches
+* pebble - this is a Cloudpebble .zip backup of the Pebble client for these switches
 
 Further details on this project are available at [alexshakespeare.com](http://new.alexshakespeare.com/self-actuated-programmable-switch/)
