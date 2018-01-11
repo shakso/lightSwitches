@@ -1,5 +1,5 @@
 # lightSwitches
-Repository containing NodeJS and Arduino code for remote controlling Orvibo S10/20 smart switches
+Repository containing NodeJS and Arduino code for remote controlling Orvibo S10/20 smart switches.
 
 ## Contents
 This repository contains 4 directories. They are as follows
