@@ -1,0 +1,202 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>autoswitch</title> 
+	<meta name="viewport" content="width=device-width, initial-scale=1"> 
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+	<style type="text/css">
+	h2 { 
+		margin-bottom:0px; 
+		margin-top:0px; 
+	}
+	.ui-block-a, .ui-block-b { 
+		padding-left:10px; 
+		border:1px solid #ccc; 
+		width:48%!important; 
+		margin-left:2px; 
+	}
+	.ui-checkbox { 
+		padding-bottom:5px; 
+	}
+	div.ui-slider-switch {
+    	position: absolute !important;
+    	right: 0 !important;
+    	width: 44% !important;
+    	margin-top:5px!important;
+	}
+	div.ui-field-contain {
+		padding:10px 0px 7px 0px;
+		float:right;
+		width:100%;
+	}
+	</style>
+</head> 
+<body> 
+
+<div data-role="page" id="settings">
+	<div data-role="header">
+		<h1>Autoswitch</h1>
+		<a href="#" data-icon="check" class="ui-btn-right" id="saveButton">Save</a>
+	</div>
+
+	<div data-role="content">	
+		<div class="ui-grid-a">
+			<div class="ui-block-a">
+				<div data-role="fieldcontain" id="leftSwitch">
+					<h2>Left</h2>
+				</div>
+			</div>
+			<div class="ui-block-b">
+				<div data-role="fieldcontain" id="rightSwitch">
+					<h2>Right</h2>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <div data-role="footer" data-position="fixed">
+        <div data-role="navbar" data-iconpos="bottom">
+            <ul>
+                <li><a href="#switcher" data-icon="grid" data-role="tab">Switches</a></li>
+                <li><a href="#settings" data-icon="gear" data-role="tab" class="ui-btn-active ui-state-persist">Configure</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+<div data-role="page" id="switcher">
+	<div data-role="header">
+		<h1>Autoswitch</h1>
+	</div>
+
+	<div data-role="content">	
+		<div class="ui-grid-a">
+			<div data-role="fieldcontain" id="allSwitch">			
+			</div>
+		</div>
+	</div>
+
+    <div data-role="footer" data-position="fixed">
+        <div data-role="navbar" data-iconpos="bottom">
+            <ul>
+                <li><a href="#switcher" data-icon="grid" data-role="tab" class="ui-btn-active ui-state-persist">Switches</a></li>
+                <li><a href="#settings" data-icon="gear" data-role="tab">Configure</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script language="Javascript">
+
+$(document).ready(function() {
+
+	var ws = new WebSocket('ws://192.168.1.2:3000');
+
+	ws.onopen = function () {
+  		ws.send("discover"); 
+	};
+
+	$("a[data-role=tab]").each(function () {
+	    var anchor = $(this);
+	    anchor.bind("click", function () {
+	        $.mobile.changePage(anchor.attr("href"), {
+	            transition: "none",
+	            changeHash: false
+	        });
+	        return false;
+	    });
+	});
+
+	count = 0;
+	$.getJSON('http://192.168.1.2/?discover', function(data) {
+		$.each(data.hosts, function(key, value) {
+			$('div#leftSwitch').append('\
+		    <fieldset data-role="controlgroup" data-type="horizontal">\
+			   <input type="checkbox" name="checkLeft' + count + '" id="checkLeft' + count + '" class="custom" />\
+			   <label for="checkLeft' + count + '">' + value.name + '</label>\
+		    </fieldset>');
+		    $('div#rightSwitch').append('\
+		    <fieldset data-role="controlgroup" data-type="horizontal">\
+			   <input type="checkbox" name="checkRight' + count + '" id="checkRight' + count + '" class="custom" />\
+			   <label for="checkRight' + count + '">' + value.name + '</label>\
+		    </fieldset>');
+			$('div#allSwitch').append('<div data-role="fieldcontain">\
+			<label style="display:inline!important;float:left;" for="' + value.name + '">' + value.name + '</label>\
+				<select class="slider" name="' + value.name + '" id="' + value.name + '" data-role="slider">\
+					<option value="off">Off</option>\
+					<option value="on">On</option>\
+				</select>\
+			</div>');
+
+    		$('div#allSwitch').enhanceWithin();
+
+		    count++;
+		});
+
+		$.get('/getSettings', function(settings) {
+			var states = settings.split("|");
+			
+			for (i=0; i<count; i++) {
+				if (states[0].charAt(i) == "1") {
+					$("input#checkLeft" + i).prop("checked", true);
+				}
+				if (states[1].charAt(i) == "1") {
+					$("input#checkRight" + i).prop("checked", true);
+				}
+			}
+			
+			$('div#leftSwitch').enhanceWithin();
+			$('div#rightSwitch').enhanceWithin();
+
+		});
+	});
+
+	$('a#saveButton').on('click', function (e) {
+		checkLeft="";
+		checkRight="";
+
+		for (i=0; i<count; i++) {
+			if ($("input#checkLeft" + i).attr('checked')) {
+				checkLeft+="1";
+			} else{
+				checkLeft+="0"
+			}
+			
+			if ($("input#checkRight" + i).attr('checked')) {
+				checkRight+="1";
+			} else{
+				checkRight+="0"
+			}
+
+		}
+
+		$('#saveButton').css("backgroundColor", "#ffffcc");
+
+		$.get("/setSettings?data=" + checkLeft + "|" + checkRight, function() {
+			$('#saveButton').css("backgroundColor", "#ccffcc");
+			setTimeout(function() { $('#saveButton').css("backgroundColor", "#eeeeee"); }, 2000);
+		});
+	});
+
+	ws.onmessage = function (e) {
+  		var hostArray = JSON.parse(e.data).hosts;
+  		for(i=0; i<hostArray.length;i++) {
+  			if (hostArray[i].state) {
+  				$("select#" + hostArray[i].name).val('on').slider('refresh');
+  			} else {
+  				$("select#" + hostArray[i].name).val('off').slider('refresh');  				
+  			}
+  		}
+	};
+
+	$('select.slider').live('change', function(){
+		ws.send($(this)[0].name + ":" + $(this)[0].value);
+	});
+});
+
+</script>
+</body>
+</html>
